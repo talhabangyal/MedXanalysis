@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName          String?  @map("first_name")
+  lastName           String?  @map("last_name")
+  username           String?   @unique
+  email              String    @unique
+  password           String
+  phoneNo            String?   @map("phone_no")
+  residentialAddress String?   @map("residential_address")
+  permanentAddress   String?   @map("permanent_address")
+  profileImage       String?   @map("profile_image")
+  role               Role      @default(client)
+  resetToken         String?
+  resetTokenExpiry   DateTime? @map("reset_token_expiry")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Support {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  subject     String?
+  body        String?
+  status      String?  @default("pending")
+  reply       String?
+  image       String?
+  imageUrl    String?  @map("image_url")
+  createdAt   DateTime? @default(now()) @map("created_at")
+  updatedAt   DateTime? @default(now()) @map("updated_at")
+
+  @@map("support")
+}
+
+model Message {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName  String?  @map("first_name")
+  lastName   String?  @map("last_name")
+  email      String?
+  subject    String?
+  body       String?
+  createdAt  DateTime? @default(now()) @map("created_at")
+
+  @@map("messages")
+}
+
+model Notification {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subject    String?
+  body       String?
+  createdBy  String?  @map("created_by") @db.Uuid
+  createdAt  DateTime? @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+model UserNotification {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String?  @map("user_id") @db.Uuid
+  notificationId  String?  @map("notification_id") @db.Uuid
+  isRead          Boolean? @default(false) @map("is_read")
+
+  @@map("user_notifications")
+}
+
+model Activity {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  action      String?
+  description String?
+  source      String?
+  createdAt   DateTime? @default(now()) @map("created_at")
+
+  @@map("activities")
+}
+
+model Log {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  logType    String?  @map("log_type")
+  message    String?
+  createdAt  DateTime? @default(now()) @map("created_at")
+
+  @@map("logs")
+}
+
+model Subscription {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  planName         String?  @map("plan_name")
+  monthlyPrice     Decimal? @map("monthly_price") @db.Decimal
+  yearlyPrice      Decimal? @map("yearly_price") @db.Decimal
+  features         String?
+  monthlyDiscount  Decimal? @map("monthly_discount") @db.Decimal
+  yearlyDiscount   Decimal? @map("yearly_discount") @db.Decimal
+  createdAt        DateTime? @default(now()) @map("created_at")
+
+  @@map("subscriptions")
+}
+
+model UserSubscription {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String?  @map("user_id") @db.Uuid
+  subscriptionId String?  @map("subscription_id") @db.Uuid
+  status         String?  @default("active")
+  startDate      DateTime? @default(now()) @map("start_date")
+  endDate        DateTime? @map("end_date")
+
+  @@map("user_subscriptions")
+}
+
+model Report {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String?  @map("user_id") @db.Uuid
+  reportStatus   String?  @map("report_status")
+  analyzedReport String?  @map("analyzed_report")
+  uploadDate     DateTime? @default(now()) @map("upload_date")
+
+  @@map("reports")
+}
+
+model UploadedReport {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reportId          String?  @map("report_id") @db.Uuid
+  reportUrl         String?  @map("report_url")
+  reportType        String?  @map("report_type")
+  analyzedByAi      Boolean? @default(false) @map("analyzed_by_ai")
+  checkedByDoctor   Boolean? @default(false) @map("checked_by_doctor")
+  language          String?
+  sendToWhatsapp    Boolean? @default(false) @map("send_to_whatsapp")
+
+  @@map("uploaded_reports")
+}
+
+model ForgotPassword {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  code       String?
+  timeLimit  DateTime? @map("time_limit")
+  expiredAt  DateTime? @map("expired_at")
+  createdAt  DateTime? @default(now()) @map("created_at")
+
+  @@map("forgot_password")
+}
+
+enum Role {
+  admin
+  client
+  doctor
+  enterprise
+}
+

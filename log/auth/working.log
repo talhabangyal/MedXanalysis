@@ -1,0 +1,3 @@
+2026-05-02T08:25:41.000Z | INFO | JWT token issued
+2026-05-02T08:26:07.000Z | WARNING | Password reset requested multiple times
+2026-05-02T08:27:49.000Z | ERROR | Invalid refresh token rejected
