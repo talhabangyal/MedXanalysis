@@ -12,6 +12,9 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
+   "engines": {
+    "node": "22.x"
+  },
   "dependencies": {
     "@iconify/react": "^6.0.2",
     "@nestjs/jwt": "^11.0.2",
