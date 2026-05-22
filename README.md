@@ -100,3 +100,100 @@ A full-stack application for uploading, managing, and analyzing medical reports.
 ## 📝 License
 
 This project is private and confidential.
+
+## 🚀 Deployment (Vercel)
+
+This project is compatible with Vercel, but a few deployment-specific environment variables and build steps are required.
+
+- Recommended Vercel Environment Variables:
+   - `DATABASE_URL` — Your Postgres connection string.
+   - `BLOB_READ_WRITE_TOKEN` — (optional) Vercel Blob token to store uploaded files. If omitted, uploads fall back to `public/` during local runs only.
+   - `ANALYSIS_SERVICE_URL` — (recommended for Vercel) URL of an external analysis service that performs Python-based report analysis. Required if you need AI analysis on Vercel because Vercel cannot spawn a local Python process.
+   - `VERCEL` — Vercel sets this automatically (`1`) during builds.
+
+- Build hooks and scripts:
+
+   - The repository includes a `postinstall` script that runs `prisma generate` during install. Vercel will execute this during the build step by default.
+
+   - Example `vercel.json` is included in the repository to document the expected env names and the Next build:
+
+      - See `vercel.json` for a suggested configuration.
+
+- Uploads and storage:
+
+   - Serverless functions on Vercel cannot rely on a writable persistent filesystem. To persist uploads in production, set `BLOB_READ_WRITE_TOKEN` and the app will store files using Vercel Blob via `src/lib/upload-storage.ts`.
+   - If you prefer S3, you can modify `src/lib/upload-storage.ts` to use AWS SDK as a fallback when `BLOB_READ_WRITE_TOKEN` is not present.
+
+- Python analysis service:
+
+   - The repository previously used a local Python spawn for report analysis. On Vercel, configure an external analysis service and set `ANALYSIS_SERVICE_URL` to point at it.
+   - The admin API will forward the report URL (or local path during development) to the configured analysis service.
+
+Quick deploy steps (local verification before pushing to Vercel):
+
+```bash
+# Install dependencies and generate Prisma client
+npm install
+
+# Run local dev server (uses local filesystem and python if available)
+npm run dev
+
+# Build locally to verify (this mirrors the Vercel build)
+npm run build
+```
+
+Notes:
+
+- If you want to keep using the built-in Python model during development, run the Python service in `model/` using a virtualenv and set `PYTHON_EXECUTABLE` locally if required.
+- Ensure `node_modules/` is ignored in git (already configured in `.gitignore`).
+
+If you want, I can add an example `ANALYSIS_SERVICE_URL` mock implementation or add S3 support for uploads. Let me know which you'd prefer.
+
+## 🗄️ Supabase / Postgres Deployment
+
+This project works with Postgres and is compatible with Supabase. Follow these steps to deploy using Supabase Postgres and (optionally) Supabase Storage:
+
+1. Create a Supabase project and note the **Project URL** and **API keys** from the dashboard.
+
+2. Set environment variables (locally in `.env` or in Vercel/other host):
+
+```env
+DATABASE_URL="<your-supabase-postgres-connection-string>"
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="<your-service-role-key>"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="<your-anon-key>"
+```
+
+Use the pooled connection string (often provided by Supabase) as `DATABASE_URL` for production. For Prisma migrations, you can also set `SHADOW_DATABASE_URL` if you use a separate shadow DB.
+
+3. Enable required Postgres extensions (Supabase SQL editor → New Query). For example, to enable `pgcrypto` (used by `gen_random_uuid()` in the Prisma schema):
+
+```sql
+create extension if not exists "pgcrypto";
+```
+
+4. Generate Prisma client and apply schema:
+
+```bash
+npx prisma generate
+npx prisma db push
+# (optional) npx prisma migrate deploy
+```
+
+5. (Optional) Use Supabase Storage for uploads instead of Vercel Blob. If you prefer Supabase Storage:
+
+- Create a storage bucket in the Supabase dashboard and generate a service role key.
+- Update `src/lib/upload-storage.ts` to use the Supabase Storage SDK (`@supabase/supabase-js`) or configure the app to call an authenticated backend route that uploads to Supabase Storage using the service role key.
+
+- The repository includes a server-side proxy endpoint for uploads:
+
+   - `POST /api/supabase/upload` accepts `multipart/form-data` fields: `file` (required), `folder` (optional), and `filenameBase` (optional). It uploads the file to your Supabase Storage bucket using the service role key and returns the public URL in the response.
+
+   - This proxy avoids exposing service-role credentials to the browser and is suitable for protected uploads.
+
+6. Set the same environment variables in Vercel or your hosting provider before deploying.
+
+Notes:
+
+- Prisma in this repo is configured to use `DATABASE_URL` (see `prisma/schema.prisma`).
+- Keep secrets out of source control — use platform environment variables for production.

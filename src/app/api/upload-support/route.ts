@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { saveUpload } from '@/lib/upload-storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,25 +14,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ext = file.name.split('.').pop() || 'png';
-
-    const sanitized = filenameBase
-      .toLowerCase()
-      .replace(/[^a-z0-9_\-]/g, '_')
-      .replace(/\s+/g, '_');
-
-    const filename = `${sanitized}.${ext}`;
-    const buffer = await file.arrayBuffer();
-
-    const supportDir = path.join(process.cwd(), 'public', 'support');
-    await mkdir(supportDir, { recursive: true });
-
-    const filePath = path.join(supportDir, filename);
-    await writeFile(filePath, Buffer.from(buffer));
+    const result = await saveUpload({
+      file,
+      folder: 'support',
+      filenameBase,
+      defaultExtension: '.png',
+    });
 
     return NextResponse.json({
       data: {
-        path: `/support/${filename}`,
+        path: result.path,
       },
     });
   } catch (error) {

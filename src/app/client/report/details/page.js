@@ -1,11 +1,7 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
 import ReportDetailsPage from "../[id]/page";
 
-export default function ReportDetailsByQueryPage() {
-  const searchParams = useSearchParams();
-  const id = searchParams.get("id") || "";
+export default function ReportDetailsByQueryPage({ searchParams }) {
+  const id = (searchParams && searchParams.id) || "";
 
   return <ReportDetailsPage params={{ id }} />;
 }

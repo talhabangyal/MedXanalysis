@@ -1,8 +1,7 @@
 import { prisma } from './prisma';
 import * as bcrypt from 'bcrypt';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import type { Role } from '@/generated/prisma/enums';
+import { deleteUpload } from './upload-storage';
 
 /**
  * Database abstraction layer for MedX application
@@ -398,12 +397,7 @@ export const reports = {
       });
 
       if (uploadedReport?.reportUrl) {
-        const filePath = path.join(process.cwd(), 'public', uploadedReport.reportUrl.replace(/^\//, ''));
-        try {
-          await fs.unlink(filePath);
-        } catch {
-          // Ignore missing file cleanup errors.
-        }
+        await deleteUpload(uploadedReport.reportUrl);
       }
 
       await prisma.$transaction([

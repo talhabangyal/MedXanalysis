@@ -79,6 +79,35 @@ async function readWorkingLogsFromFiles(): Promise<WorkingLogRecord[]> {
 }
 
 function runPythonAnalysis(filePath: string, reportId?: string): Promise<string> {
+  // Prefer a remote analysis service when configured (required on Vercel)
+  const analysisServiceUrl = process.env.ANALYSIS_SERVICE_URL;
+
+  const isRemoteUrl = (v: string) => /^https?:\/\//i.test(v);
+
+  if (analysisServiceUrl) {
+    // Send the file reference to the remote analysis service which can handle
+    // either a public URL or a local path (if the service has access).
+    return fetch(analysisServiceUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileUrl: isRemoteUrl(filePath) ? filePath : undefined, localPath: isRemoteUrl(filePath) ? undefined : filePath, reportId }),
+    }).then(async (res) => {
+      if (!res.ok) throw new Error(`Analysis service responded with ${res.status}`);
+      return res.text();
+    });
+  }
+
+  if (process.env.VERCEL === '1') {
+    return Promise.reject(
+      new Error('Report analysis requires ANALYSIS_SERVICE_URL when running on Vercel.')
+    );
+  }
+
+  // Local fallback (development) - must be a local path
+  if (isRemoteUrl(filePath)) {
+    return Promise.reject(new Error('Cannot analyze remote URL without ANALYSIS_SERVICE_URL configured.'));
+  }
+
   const pythonExecutable = process.env.PYTHON_EXECUTABLE || 'python';
   const scriptPath = path.join(process.cwd(), 'model', 'app.py');
   const args = reportId
@@ -243,15 +272,20 @@ export async function POST(request: Request) {
           );
         }
 
-        const resolvedPath = path.join(process.cwd(), 'public', reportUrl.replace(/^\//, ''));
+        const isRemote = /^https?:\/\//i.test(reportUrl);
+        let resolvedPath = reportUrl;
 
-        try {
-          await fs.access(resolvedPath);
-        } catch {
-          return NextResponse.json(
-            { error: `Report file not found at ${reportUrl}` },
-            { status: 404 }
-          );
+        if (!isRemote) {
+          resolvedPath = path.join(process.cwd(), 'public', reportUrl.replace(/^\//, ''));
+
+          try {
+            await fs.access(resolvedPath);
+          } catch {
+            return NextResponse.json(
+              { error: `Report file not found at ${reportUrl}` },
+              { status: 404 }
+            );
+          }
         }
 
         try {

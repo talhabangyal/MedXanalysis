@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { saveUpload } from '@/lib/upload-storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,29 +14,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get file extension
-    const ext = file.name.split('.').pop() || 'pdf';
-    
-    // Sanitize filename
-    const sanitized = filenameBase
-      .toLowerCase()
-      .replace(/[^a-z0-9_\-]/g, '_')
-      .replace(/\s+/g, '_');
-    
-    const filename = `${sanitized}.${ext}`;
-    const buffer = await file.arrayBuffer();
-    
-    // Ensure reports directory exists
-    const reportsDir = path.join(process.cwd(), 'public', 'report');
-    await mkdir(reportsDir, { recursive: true });
-    
-    // Write file
-    const filePath = path.join(reportsDir, filename);
-    await writeFile(filePath, Buffer.from(buffer));
+    const result = await saveUpload({
+      file,
+      folder: 'report',
+      filenameBase,
+      defaultExtension: '.pdf',
+    });
     
     return NextResponse.json({
       data: {
-        path: `/report/${filename}`,
+        path: result.path,
       },
     });
   } catch (error) {
