@@ -174,9 +174,14 @@ def save_analysis_to_db(report_id: str, analysis_text: str) -> None:
 	if psycopg2 is None:
 		raise RuntimeError("psycopg2 is not installed; see model/requirements.txt")
 
-	database_url = os.getenv("DATABASE_URL")
+	database_url = (
+		os.getenv("DATABASE_URL")
+		or os.getenv("POSTGRES_PRISMA_URL")
+		or os.getenv("POSTGRES_URL")
+		or os.getenv("POSTGRES_URL_NON_POOLING")
+	)
 	if not database_url:
-		raise EnvironmentError("DATABASE_URL is not set in environment or .env")
+		raise EnvironmentError("DATABASE_URL or Supabase Postgres URL is not set in environment or .env")
 
 	# Connect and run updates
 	try:

@@ -3,7 +3,12 @@ import * as bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:0806@localhost:5432/medx';
+const connectionString =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  'postgresql://postgres:0806@localhost:5432/medx';
 
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
