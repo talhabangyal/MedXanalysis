@@ -7,16 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-<<<<<<< Updated upstream
-    "postinstall": "prisma generate",
-    "seed": "tsx prisma/seed.ts"
-=======
     "seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate"
-  },
-  "engines": {
-    "node": "22.x"
->>>>>>> Stashed changes
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
